@@ -9,6 +9,8 @@ struct SimilarMovie: Codable {
     let name: String
     /// url постера
     let posterUrl: String
+    /// imageData
+    var imageData: Data?
 
     init(dto: SimilarMoviesDto) {
         name = dto.name

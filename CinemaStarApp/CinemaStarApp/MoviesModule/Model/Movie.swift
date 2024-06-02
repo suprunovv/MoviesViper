@@ -13,9 +13,11 @@ struct Movie {
     let rating: Double
     /// id фильма
     let id: String
+    /// ImageData
+    var imageData: Data?
 
     init(dto: DocDto) {
-        image = dto.poster.url
+        image = dto.poster.previewUrl
         name = dto.name
         rating = round(dto.rating.kp * 10) / 10
         id = String(dto.id)
@@ -26,5 +28,6 @@ struct Movie {
         name = data.name ?? ""
         rating = data.rating
         id = data.id ?? ""
+        imageData = data.imageData
     }
 }

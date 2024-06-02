@@ -4,13 +4,13 @@
 import Foundation
 
 /// Стейт загрузки фильмов
-enum LoadingState<T> {
+enum LoadingState {
     /// Инициализация
     case initial
     /// Загрузка
     case loading
     /// Успешная загрузка и получение данных
-    case sucsess(T)
+    case sucsess
     /// Ошибка загрузки
-    case failure
+    case failure(Error)
 }

@@ -19,6 +19,7 @@ struct DocDto: Codable {
 struct PosterDto: Codable {
     /// url постера
     let url: String
+    let previewUrl: String
 }
 
 /// Дто для получения рейтинга

@@ -58,6 +58,7 @@ final class StorageService {
             movieData.id = movie.id
             movieData.name = movie.name
             movieData.rating = movie.rating
+            movieData.imageData = movie.imageData ?? Data()
         }
         saveContext()
     }
