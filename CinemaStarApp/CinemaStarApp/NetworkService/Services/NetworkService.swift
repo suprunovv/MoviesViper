@@ -3,69 +3,88 @@
 
 import KeychainSwift
 import UIKit
+import Combine
 
-/// Протокол для нетворк сервиса
-protocol NetworkServiceProtocol {
-    /// Метод для загрузки фильмов
-    func getMovies(handler: @escaping ([Movie]?) -> ())
-    /// Метод для загрузки деталей фильма
-    func getDetails(id: Int, handler: @escaping (MovieDetail?) -> ())
-    /// Метод для загрузки изображения
-    func getImage(url: String, handler: @escaping (UIImage?) -> ())
+final class Target {
+    static var isMokeTarget: Bool {
+        #if Mock
+        true
+        #else
+        false
+        #endif
+    }
 }
 
-/// Нетворк сервис
-final class NetworkService<D: Decodable>: NetworkServiceProtocol {
-    // MARK: - Private property
+protocol NetworkProtocol {
+    func fetchMovies() -> AnyPublisher<[Movie], Error>
 
-    private let apiResurce = QuestionResourse<D>()
-    private lazy var apiRequest = APIRequest(resourse: apiResurce)
-    private let imageLoder = ImageRequest()
+    func fetchDetail(id: Int) -> AnyPublisher<MovieDetail, Error>
+    
+    func fetchImage(url: URL) -> AnyPublisher<Data, Never>
+}
 
-    // MARK: - Public methods
+final class NetworkService: NetworkProtocol {
+    private let apiResource = QuestionResourse()
 
-    func getMovies(handler: @escaping ([Movie]?) -> ()) {
-        apiResurce.queryItems = [URLQueryItem(name: "query", value: "История")]
-        apiRequest.execute { result in
-            switch result {
-            case let .some(dto):
-                guard let moviesDto = dto as? WelcomeDto else {
-                    handler(nil)
-                    return
-                }
-                handler(moviesDto.docs.compactMap { Movie(dto: $0) })
-            case .none:
-                handler(nil)
+    private var cancalables: Set<AnyCancellable> = []
+    
+    private var image = UIImage()
+
+    func fetchMovies() -> AnyPublisher<[Movie], Error> {
+        if Target.isMokeTarget {
+        var fileName = "Movies"
+            if fileName.isEmpty {
+                fileName = fileName.replacingOccurrences(of: "/", with: "_")
             }
+            let bundleURL = Bundle.main.url(forResource: fileName, withExtension: "json")
+            guard let bundleURL else {
+                return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+            }
+            return URLSession.shared.dataTaskPublisher(for: bundleURL)
+                .map(\.data)
+                .decode(type: WelcomeDto.self, decoder: JSONDecoder())
+                .receive(on: RunLoop.main)
+                .map { $0.docs.map { Movie(dto: $0) } }
+                .eraseToAnyPublisher()
+        } else {
+            apiResource.queryItems = [URLQueryItem(name: "query", value: "История")]
+            guard let url = apiResource.url else {
+                return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+            }
+            var request = URLRequest(url: url)
+            print(request)
+            let keychain = KeychainSwift()
+            request.setValue(keychain.get("X-API-KEY"), forHTTPHeaderField: "X-API-KEY")
+            return URLSession.shared.dataTaskPublisher(for: request)
+                .map(\.data)
+                .decode(type: WelcomeDto.self, decoder: JSONDecoder())
+                .receive(on: RunLoop.main)
+                .map { $0.docs.map { Movie(dto: $0) } }
+                .eraseToAnyPublisher()
         }
     }
 
-    func getDetails(id: Int, handler: @escaping (MovieDetail?) -> ()) {
-        apiResurce.id = id
-        apiRequest.execute { result in
-            switch result {
-            case let .some(dto):
-                guard let detailDto = dto as? DetailMovieDto else {
-                    handler(nil)
-                    return
-                }
-                handler(MovieDetail(dto: detailDto))
-            case .none:
-                handler(nil)
-            }
+    func fetchDetail(id: Int) -> AnyPublisher<MovieDetail, Error> {
+        apiResource.id = id
+        guard let url = apiResource.url else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
         }
+        var request = URLRequest(url: url)
+        let keychain = KeychainSwift()
+        request.setValue(keychain.get("X-API-KEY"), forHTTPHeaderField: "X-API-KEY")
+        return URLSession.shared.dataTaskPublisher(for: request)
+            .map(\.data)
+            .decode(type: DetailMovieDto.self, decoder: JSONDecoder())
+            .receive(on: RunLoop.main)
+            .map { MovieDetail(dto: $0) }
+            .eraseToAnyPublisher()
     }
-
-    func getImage(url: String, handler: @escaping (UIImage?) -> ()) {
-        guard let url = URL(string: url) else { return }
-        imageLoder.url = url
-        imageLoder.execute { image in
-            switch image {
-            case .none:
-                handler(nil)
-            case let .some(image):
-                handler(image)
-            }
-        }
+    
+    func fetchImage(url: URL) -> AnyPublisher<Data, Never> {
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .receive(on: RunLoop.main)
+            .replaceError(with: image.pngData() ?? Data())
+            .eraseToAnyPublisher()
     }
 }

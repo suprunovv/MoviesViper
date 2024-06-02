@@ -1,12 +1,11 @@
 // QuestionResource.swift
 // Copyright © RoadMap. All rights reserved.
 
+
 import Foundation
 
 /// Протокол ресурса
 protocol APIResource {
-    /// Тип для докодирования
-    associatedtype ModelType: Decodable
     /// Путь
     var methodPath: String { get }
     /// Элементы запроса
@@ -24,9 +23,8 @@ extension APIResource {
 }
 
 /// Ресурс
-final class QuestionResourse<T: Decodable>: APIResource {
+final class QuestionResourse: APIResource {
     var queryItems: [URLQueryItem]?
-    typealias ModelType = T
     var id: Int?
     var methodPath: String {
         guard let id else {
@@ -35,3 +33,4 @@ final class QuestionResourse<T: Decodable>: APIResource {
         return "/v1.4/movie/\(id)"
     }
 }
+

@@ -9,6 +9,8 @@ struct Actor: Codable {
     let photoUrl: String
     /// Имя Фамилия актера
     let name: String
+    /// imageData
+    var imageData: Data?
 
     init(dto: ActorDto) {
         photoUrl = dto.photo ?? ""

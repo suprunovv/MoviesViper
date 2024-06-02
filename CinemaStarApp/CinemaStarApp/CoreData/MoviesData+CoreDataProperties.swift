@@ -14,4 +14,5 @@ public extension MoviesData {
     @NSManaged var image: String?
     @NSManaged var id: String?
     @NSManaged var rating: Double
+    @NSManaged var imageData: Data
 }

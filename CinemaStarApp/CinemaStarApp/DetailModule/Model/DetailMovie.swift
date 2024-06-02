@@ -20,11 +20,13 @@ struct MovieDetail {
     /// Тип (сериал/фильм)
     let type: String
     /// Актеры
-    let actors: [Actor]
+    var actors: [Actor]
     /// Смотрите так же
-    let semilarMovies: [SimilarMovie]?
+    var semilarMovies: [SimilarMovie]?
     /// Язык фильма
     let language: String?
+    /// imageData
+    var imageData: Data?
 
     init(dto: DetailMovieDto) {
         posterUrl = dto.poster?.url ?? ""
